@@ -257,6 +257,9 @@ Json & Json::operator [] (const std::string &key) {
 
 void Json::stringify(std::string & to) {
 	switch(type) {
+		case JT_NONE:
+			to += "<none>";
+			break;
 		case JT_NULL:
 			to += "null";
 			break;
@@ -290,6 +293,9 @@ void Json::stringify(std::string & to) {
 		case JT_DICT:
 			to.push_back('{');
 			for(auto it = dict.begin(); it != dict.end(); it ++) {
+				if(it->second.type == JT_NONE)
+					continue;
+
 				to.push_back('"');
 				to += it->first;
 				to.push_back('"');
@@ -323,6 +329,7 @@ void Json::append(const Json &json) {
 void Json::append(Json && json) {
 	if(type == JT_ARRAY) {
 		array.push_back(std::move(json));
+		json.type = JT_NONE;
 	} else {
 		throw std::out_of_range("use subscript to access something not a array");
 	}
@@ -339,8 +346,10 @@ void Json::extend(const Json &json) {
 
 void Json::extend(Json &&json) {
 	if(type == JT_ARRAY && json.type == JT_ARRAY) {
-		for(auto && subJson : json.array)
+		for(auto & subJson : json.array) {
 			array.push_back(std::move(subJson));
+			subJson.type = JT_NONE;
+		}
 	} else {
 		throw std::out_of_range("use subscript to access something not a array");
 	}

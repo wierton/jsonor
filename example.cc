@@ -12,14 +12,16 @@ int main() {
 
 
 	json["k4"] = Json("{'c4':'v5', '7': ' h e l l o ' }");
-	std::cout << json["k4"] << std::endl;
+	std::cout << json << std::endl;
 
 	Json array("[]");
 	array.extend(json["12"]);
 	std::cout << array << std::endl;
 
-	array.append(json);
+	array.append(std::move(json));
 	std::cout << array << std::endl;
+
+	std::cout << json << std::endl;
 
 	return 0;
 }
