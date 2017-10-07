@@ -91,11 +91,10 @@ void Json::MatchNumber(Json & to, std::istream & is) {
 	while(!isEof(is)) {
 		char ch = is.get();
 
-		if(isdigit(ch)) {
-			to.string.push_back(ch);
-		} else if(ch == '.' || ch == 'e' || ch == 'E'
-				|| ch == 'x' || ch == 'X'
+		if(isdigit(ch) || ch == 'x' || ch == 'X'
 				|| ch == '+' || ch == '-') {
+			to.string.push_back(ch);
+		} else if(ch == '.' || ch == 'e' || ch == 'E') {
 			to.type = JT_FLOAT;
 			to.string.push_back(ch);
 		} else {
@@ -119,9 +118,7 @@ void Json::MatchNumber(Json & to, std::istream & is) {
 
 void Json::MatchString(Json & to, std::istream & is) {
 	to.type = JT_STRING;
-
 	char quote = is.get();
-
 	while(!isEof(is)) {
 		char ch = is.get();
 
@@ -143,20 +140,39 @@ void Json::MatchString(Json & to, std::istream & is) {
 			case 'v':  to.string.push_back('\v'); break;
 			case 't':  to.string.push_back('\t'); break;
 			case 'b':  to.string.push_back('\b'); break;
+			case 'u':
+			case 'U': {
+				uint16_t u16 = 0;
+				char *p = reinterpret_cast<char*>(&u16);
+				is >> std::hex >> u16;
+				if(u16 != static_cast<char>(u16))
+				   to.string.push_back(p[1]);
+				to.string.push_back(p[0]);
+
+				if(is.fail()) {
+					throw ParseException("invalid unicode character");
+				}
+				break;
+			}
 			case 'x':
 			case 'X':
-					   is >> std::hex >> ch;
-					   to.string.push_back(ch);
-					   break;
+				is >> std::hex >> ch;
+				to.string.push_back(ch);
+
+				if(is.fail()) {
+					is.sync();
+					throw ParseException("invalid unicode character");
+				}
+				break;
 			case '0':
-					   is >> std::oct >> ch;
-					   to.string.push_back(ch);
-					   break;
+				is >> std::oct >> ch;
+				to.string.push_back(ch);
+				break;
 			case '\n':
 				throw ParseException("line break in string literal");
 			default:
-					   to.string.push_back(ch);
-					   break;
+				to.string.push_back(ch);
+				break;
 		}
 	}
 }

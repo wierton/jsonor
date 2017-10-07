@@ -18,7 +18,7 @@ namespace wtd {
 
 template<class... Args>
 void log_r(const char *fmt, Args... args) {
-	ostream_print(std::cerr, fmt, args...);
+	wt::ostream_print(std::cerr, fmt, args...);
 }
 
 template<class... Args>

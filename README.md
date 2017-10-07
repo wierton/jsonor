@@ -13,7 +13,7 @@ int main() {
 	std::cout << json["12"][4]["67"].to_string() << std::endl;
 	std::cout << json.to_string() << std::endl;
 
-	/* set key value pair of object */
+	/* insert key value pair of object */
 	json["k4"] = Json("{'c4':'v5', '7': ' h e l l o ' }");
 	std::cout << json << std::endl;
 
