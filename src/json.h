@@ -113,10 +113,19 @@ public:
 	Json & operator [] (const int idx);
 	Json & operator [] (const std::string &key);
 
+	size_t size();
+	void append(const Json &json);
+	void append(Json && json);
+	void extend(const Json &json);
+	void extend(Json && json);
+
 	JsonType gettype();
 	int to_int();
 	double to_float();
 	std::string to_string();
+
+	friend std::ostream &operator << (std::ostream &, Json &);
+	friend std::ostream &operator << (std::ostream &, Json &&);
 };
 
 

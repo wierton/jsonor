@@ -252,13 +252,7 @@ Json & Json::operator [] (const int idx) {
 }
 
 Json & Json::operator [] (const std::string &key) {
-	auto it = dict.find(key);
-
-	if(it != dict.end()) {
-		return it->second;
-	}
-
-	throw std::out_of_range("use key to access something not a dict");
+	return dict[key];
 }
 
 void Json::stringify(std::string & to) {
@@ -314,6 +308,44 @@ void Json::stringify(std::string & to) {
 	}
 }
 
+size_t Json::size() {
+	return array.size();
+}
+
+void Json::append(const Json &json) {
+	if(type == JT_ARRAY) {
+		array.push_back(json);
+	} else {
+		throw std::out_of_range("use subscript to access something not a array");
+	}
+}
+
+void Json::append(Json && json) {
+	if(type == JT_ARRAY) {
+		array.push_back(std::move(json));
+	} else {
+		throw std::out_of_range("use subscript to access something not a array");
+	}
+}
+
+void Json::extend(const Json &json) {
+	if(type == JT_ARRAY && json.type == JT_ARRAY) {
+		for(auto & subJson : json.array)
+			array.push_back(subJson);
+	} else {
+		throw std::out_of_range("use subscript to access something not a array");
+	}
+}
+
+void Json::extend(Json &&json) {
+	if(type == JT_ARRAY && json.type == JT_ARRAY) {
+		for(auto && subJson : json.array)
+			array.push_back(std::move(subJson));
+	} else {
+		throw std::out_of_range("use subscript to access something not a array");
+	}
+}
+
 Json::JsonType Json::gettype() {
 	return type;
 }
@@ -348,3 +380,12 @@ std::string Json::to_string() {
 	return to;
 }
 
+std::ostream &operator << (std::ostream &os, Json &json) {
+	os << json.to_string();
+	return os;
+}
+
+std::ostream &operator << (std::ostream &os, Json &&json) {
+	os << json.to_string();
+	return os;
+}
