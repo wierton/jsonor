@@ -1,16 +1,24 @@
 .DEFAULT_GOAL=all
 
-CC = clang++
-GDB = gdb
-CFLAGS = -c -O2 -std=c++14 -Wall -MMD # -ggdb
+CC        = clang++
+GDB       = gdb
+CFLAGS    = -c -O2 -std=c++14 -Wall -MMD -Isrc/
 BUILD_DIR = build
-SRCS = $(filter-out ./build/%.cc,$(shell find . -name "*.cc"))
-# $(info SRCS:$(SRCS))
-OBJS = $(patsubst ./%.cc,$(BUILD_DIR)/%.o,$(SRCS))
-BIN = $(BUILD_DIR)/jsonor
-ARGS = -y c11.y
+SRCS      = $(shell find ./src -name "*.cc")
+OBJS      = $(patsubst ./%.cc,$(BUILD_DIR)/%.o,$(SRCS))
+BIN       = $(BUILD_DIR)/jsonor
 
-.PHONY: all gdb run rebuild clean
+ifeq ($(test),true)
+SRCS += ./test/test.cc
+else
+SRCS += ./example.cc
+endif
+
+$(info "SRCS:$(SRCS)")
+
+.PHONY: all test gdb run rebuild clean
+
+test:all
 
 all: $(OBJS)
 	@$(CC) $^ -o $(BIN)

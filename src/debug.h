@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "vt100.h"
+#include "json.h"
 
 #define ERROR_TAG    VT_COLOR_RED    "[ERROR] "    VT_RESET
 #define WARNING_TAG  VT_COLOR_YELLOW "[WARNING] "  VT_RESET
@@ -15,54 +16,9 @@
 /* wt's debug */
 namespace wtd {
 
-inline void ostream_print(std::ostream &os, const char * fmt) {
-	while(*fmt) {
-		if(*fmt == '%')
-			fmt ++;
-		os << *fmt;
-		fmt ++;
-	}
-}
-
-template<class T, class... Args>
-void ostream_print(std::ostream &os, const char * fmt, T firstArg, Args... restArgs) {
-	while(*fmt) {
-		if(*fmt == '%') {
-			fmt ++;
-			if(*fmt == '%') {
-				os << '%';
-				fmt ++;
-				continue;
-			} else {
-				os << firstArg;
-				ostream_print(os, fmt, restArgs...);
-				return;
-			}
-		}
-		os << *fmt;
-		fmt ++;
-	}
-}
-
 template<class... Args>
 void log_r(const char *fmt, Args... args) {
 	ostream_print(std::cerr, fmt, args...);
-}
-
-/* FIXME: should not be put here */
-template<class... Args>
-inline std::size_t sprint(std::string &sout, const char *fmt, Args... args) {
-	std::ostringstream os;
-	ostream_print(os, fmt, args...);
-	sout = os.str();
-	return sizeof...(Args);
-}
-
-template<class... Args>
-inline std::string sformat(const char *fmt, Args... args) {
-	std::ostringstream os;
-	ostream_print(os, fmt, args...);
-	return os.str();
 }
 
 template<class... Args>

@@ -1,5 +1,4 @@
 #include "json.h"
-#include "debug.h"
 
 
 inline bool isEof(std::istream & is) {
@@ -18,7 +17,6 @@ Json::Json(const char *inputString) {
 
 Json::Json(std::string &inputString) {
 	std::istringstream iss(inputString);
-	dynamic_assert(iss.good(), "convert to istringstream fails...\n");
 	MatchPrimary(*this, iss);
 }
 
@@ -38,6 +36,13 @@ void Json::MatchPrimary(Json & to, std::istream & is) {
 	char ch = is.peek();
 
 	switch(ch) {
+		case '_':
+		case 'a'...'z':
+		case 'A'...'Z':
+			MatchIdent(to, is);
+			break;
+		case '+':
+		case '-':
 		case '0'...'9':
 			MatchNumber(to, is);
 			break;
@@ -53,8 +58,31 @@ void Json::MatchPrimary(Json & to, std::istream & is) {
 			break;
 		default:
 			to.type = JT_ERROR;
-			loge("JT_ERROR:'%:%'\n", ch, static_cast<int>(ch));
+			throw ParseException(wt::sformat("unexpected character '%'", ch));
 			break;
+	}
+}
+
+void Json::MatchIdent(Json & to, std::istream & is) {
+	while(!isEof(is)) {
+		char ch = is.get();
+
+		if(isalnum(ch) || ch == '_') {
+			to.string.push_back(ch);
+		} else {
+			is.unget();
+			break;
+		}
+	}
+
+	if(to.string == "true") {
+		to.type = JT_TRUE;
+	} else if(to.string == "false") {
+		to.type = JT_FALSE;
+	} else if(to.string == "null") {
+		to.type = JT_NULL;
+	} else {
+		throw ParseException(wt::sformat("unexpected identifier %", to.string));
 	}
 }
 
@@ -65,7 +93,9 @@ void Json::MatchNumber(Json & to, std::istream & is) {
 
 		if(isdigit(ch)) {
 			to.string.push_back(ch);
-		} else if(ch == '.' || ch == 'e') {
+		} else if(ch == '.' || ch == 'e' || ch == 'E'
+				|| ch == 'x' || ch == 'X'
+				|| ch == '+' || ch == '-') {
 			to.type = JT_FLOAT;
 			to.string.push_back(ch);
 		} else {
@@ -74,10 +104,15 @@ void Json::MatchNumber(Json & to, std::istream & is) {
 		}
 	}
 
+	std::istringstream iss(to.string);
 	if(to.type == JT_INT) {
-		std::istringstream(to.string) >> to.integer;
+		iss >> to.integer;
 	} else  {
-		std::istringstream(to.string) >> to.floating;
+		iss >> to.floating;
+	}
+
+	if(!isEof(iss)) {
+		throw ParseException(wt::sformat("invalid number %", to.string));
 	}
 }
 
@@ -93,6 +128,8 @@ void Json::MatchString(Json & to, std::istream & is) {
 		if(ch == quote) {
 			break;
 		} else if(ch != '\\') {
+			if(ch == '\n')
+				throw ParseException("line break in string literal");
 			to.string.push_back(ch);
 			continue;
 		}
@@ -115,6 +152,8 @@ void Json::MatchString(Json & to, std::istream & is) {
 					   is >> std::oct >> ch;
 					   to.string.push_back(ch);
 					   break;
+			case '\n':
+				throw ParseException("line break in string literal");
 			default:
 					   to.string.push_back(ch);
 					   break;
@@ -147,10 +186,10 @@ void Json::MatchArray(Json & to, std::istream & is) {
 		else if(ch == ',')
 			continue;
 		else
-			loge("expected ',' or ']'\n");
+			throw ParseException(wt::sformat("unexpected character '%'", ch));
 	}
 
-	log("JT_ARRAY:%:%\n", to.to_string());
+	// log("JT_ARRAY:%:%\n", to.to_string());
 }
 
 void Json::MatchDict(Json & to, std::istream & is) {
@@ -172,8 +211,7 @@ void Json::MatchDict(Json & to, std::istream & is) {
 		/* only string can be key */
 		if(keyJson.type != JT_STRING) {
 			to.type = JT_ERROR;
-			loge("JT_ERROR\n");
-			break;
+			throw ParseException("key of object isn't string");
 		}
 
 		/* match ':' */
@@ -181,8 +219,7 @@ void Json::MatchDict(Json & to, std::istream & is) {
 		is.get(ch);
 		if(ch != ':') {
 			to.type = JT_ERROR;
-			loge("JT_ERROR\n");
-			break;
+			throw ParseException(wt::sformat("missing colon"));
 		}
 
 		/* match value */
@@ -200,7 +237,7 @@ void Json::MatchDict(Json & to, std::istream & is) {
 		else if(ch == ',')
 			continue;
 		else
-			loge("expected ',' or '}' here");
+			throw ParseException(wt::sformat("unexpected character '%'", ch));
 	}
 }
 
@@ -226,6 +263,15 @@ Json & Json::operator [] (const std::string &key) {
 
 void Json::stringify(std::string & to) {
 	switch(type) {
+		case JT_NULL:
+			to += "null";
+			break;
+		case JT_TRUE:
+			to += "true";
+			break;
+		case JT_FALSE:
+			to += "false";
+			break;
 		case JT_INT:
 			to += std::to_string(integer);
 			break;
@@ -264,8 +310,7 @@ void Json::stringify(std::string & to) {
 			to.push_back('}');
 			break;
 		default:
-			loge("JT_NONE or JT_ERROR\n");
-			break;
+			throw ParseException("internal error");
 	}
 }
 
