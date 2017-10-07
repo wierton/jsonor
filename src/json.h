@@ -100,11 +100,15 @@ private:
 	void stringify(std::string & to);
 public:
 	Json() = default;
+
+	Json(const Json &) = default;
+	Json(Json &&) = default;
+	Json & operator = (const Json &) = default;
+	Json & operator = (Json &&) = default;
+
 	Json(std::istream & is);
 	Json(const char *string);
 	Json(std::string &string);
-	Json(const Json & other) = default;
-	Json(Json && other) = default;
 
 	Json & operator [] (const int idx);
 	Json & operator [] (const std::string &key);
