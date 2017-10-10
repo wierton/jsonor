@@ -6,18 +6,58 @@ inline bool isEof(std::istream & is) {
 	return !is.good();
 }
 
-Json::Json(std::istream &is) {
-	MatchPrimary(*this, is);
+Json Json::parse(std::istream &is) {
+	Json json;
+	is.sync_with_stdio(false);
+	MatchPrimary(json, is);
+	return json;
 }
 
-Json::Json(const char *inputString) {
-	std::istringstream iss = std::istringstream(std::string(inputString));
-	MatchPrimary(*this, iss);
+Json Json::parse(std::string s) {
+	std::istringstream iss(s);
+	return parse(iss);
 }
 
-Json::Json(std::string &inputString) {
-	std::istringstream iss(inputString);
-	MatchPrimary(*this, iss);
+Json::Json(int i) :
+	type(JT_INT),
+	integer(i)
+{
+}
+
+Json::Json(double f) :
+	type(JT_FLOAT),
+	floating(f)
+{
+}
+
+Json::Json(const char *s) :
+	type(JT_STRING),
+	string(s)
+{
+}
+
+Json::Json(std::string &s) :
+	type(JT_STRING),
+	string(s)
+{
+}
+
+Json::Json(std::string &&s) :
+	type(JT_STRING),
+	string(std::move(s))
+{
+}
+
+Json::Json(Array && arr) :
+	type(JT_ARRAY),
+	array(std::move(arr))
+{
+}
+
+Json::Json(Object && obj) :
+	type(JT_OBJECT),
+	object(std::move(obj))
+{
 }
 
 void Json::EraseSpace(std::istream & is) {
@@ -209,7 +249,7 @@ void Json::MatchArray(Json & to, std::istream & is) {
 }
 
 void Json::MatchDict(Json & to, std::istream & is) {
-	to.type = JT_DICT;
+	to.type = JT_OBJECT;
 	is.ignore();
 
 	EraseSpace(is);
@@ -243,7 +283,7 @@ void Json::MatchDict(Json & to, std::istream & is) {
 
 		MatchPrimary(valueJson, is);
 
-		to.dict.insert(std::make_pair<std::string, Json>(std::move(keyJson.string), std::move(valueJson)));
+		to.object.insert(std::make_pair<std::string, Json>(std::move(keyJson.string), std::move(valueJson)));
 
 		EraseSpace(is);
 		is.get(ch);
@@ -259,7 +299,7 @@ void Json::MatchDict(Json & to, std::istream & is) {
 
 Json & Json::operator [] (const int idx) {
 	if(type == JT_ARRAY) {
-		if(idx >= array.size())
+		if(static_cast<std::size_t>(idx) >= array.size())
 			throw std::out_of_range("index overflow");
 		return array[idx];
 	}
@@ -268,7 +308,7 @@ Json & Json::operator [] (const int idx) {
 }
 
 Json & Json::operator [] (const std::string &key) {
-	return dict[key];
+	return object[key];
 }
 
 void Json::stringify(std::string & to) {
@@ -298,17 +338,17 @@ void Json::stringify(std::string & to) {
 			break;
 		case JT_ARRAY:
 			to.push_back('[');
-			for(int i = 0; i < array.size(); i++) {
+			for(int i = 0; static_cast<std::size_t>(i) < array.size(); i++) {
 				array[i].stringify(to);
 
-				if(i + 1 < array.size())
+				if(static_cast<std::size_t>(i + 1) < array.size())
 					to += ", ";
 			}
 			to.push_back(']');
 			break;
-		case JT_DICT:
+		case JT_OBJECT:
 			to.push_back('{');
-			for(auto it = dict.begin(); it != dict.end(); it ++) {
+			for(auto it = object.begin(); it != object.end(); it ++) {
 				if(it->second.type == JT_NONE)
 					continue;
 
@@ -321,7 +361,7 @@ void Json::stringify(std::string & to) {
 
 				to += ", ";
 			}
-			if(dict.begin() != dict.end())
+			if(object.begin() != object.end())
 				to.erase(to.size() - 2);
 			to.push_back('}');
 			break;

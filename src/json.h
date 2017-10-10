@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <initializer_list>
 
 namespace wt {
 
@@ -73,7 +74,7 @@ public:
 		JT_TRUE,
 		JT_FALSE,
 		JT_ARRAY,
-		JT_DICT,
+		JT_OBJECT,
 		JT_INT,
 		JT_FLOAT,
 		JT_STRING,
@@ -87,7 +88,7 @@ private:
 	double floating;
 	std::string string;
 	std::vector<Json> array;
-	std::map<std::string, Json> dict;
+	std::map<std::string, Json> object;
 
 	static void EraseSpace(std::istream & is);
 	static void MatchPrimary(Json & to, std::istream & is);
@@ -98,17 +99,26 @@ private:
 	static void MatchDict(Json & to, std::istream & is);
 
 	void stringify(std::string & to);
+
 public:
+	using Array = std::vector<Json>;
+	using Object = std::map<std::string, Json>;
+
 	Json() = default;
+
+	Json(Array &&);
+	Json(Object &&);
 
 	Json(const Json &) = default;
 	Json(Json &&) = default;
 	Json & operator = (const Json &) = default;
 	Json & operator = (Json &&) = default;
 
-	Json(std::istream & is);
-	Json(const char *string);
+	Json(int i);
+	Json(double f);
+	Json(const char *s);
 	Json(std::string &string);
+	Json(std::string &&string);
 
 	Json & operator [] (const int idx);
 	Json & operator [] (const std::string &key);
@@ -118,6 +128,9 @@ public:
 	void append(Json && json);
 	void extend(const Json &json);
 	void extend(Json && json);
+
+	static Json parse(std::istream & is);
+	static Json parse(std::string s);
 
 	JsonType gettype();
 	int to_int();

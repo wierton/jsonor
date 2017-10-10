@@ -1,6 +1,6 @@
 .DEFAULT_GOAL=all
 
-CC        = clang++
+CC        = g++
 GDB       = gdb
 CFLAGS    = -c -O2 -std=c++14 -Wall -MMD -Isrc/
 BUILD_DIR = build
