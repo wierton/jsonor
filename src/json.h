@@ -3,142 +3,88 @@
 
 
 #include <map>
-#include <vector>
 #include <string>
-#include <iostream>
-#include <sstream>
+#include <memory>
+#include <vector>
+#include <cstdint>
 #include <initializer_list>
 
-namespace wt {
 
-inline void ostream_print(std::ostream &os, const char * fmt) {
-	while(*fmt) {
-		if(*fmt == '%')
-			fmt ++;
-		os << *fmt;
-		fmt ++;
-	}
-}
-
-template<class T, class... Args>
-void ostream_print(std::ostream &os, const char * fmt, T firstArg, Args... restArgs) {
-	while(*fmt) {
-		if(*fmt == '%') {
-			fmt ++;
-			if(*fmt == '%') {
-				os << '%';
-				fmt ++;
-				continue;
-			} else {
-				os << firstArg;
-				ostream_print(os, fmt, restArgs...);
-				return;
-			}
-		}
-		os << *fmt;
-		fmt ++;
-	}
-}
-
-template<class... Args>
-inline std::size_t sprint(std::string &sout, const char *fmt, Args... args) {
-	std::ostringstream os;
-	ostream_print(os, fmt, args...);
-	sout = os.str();
-	return sizeof...(Args);
-}
-
-template<class... Args>
-inline std::string sformat(const char *fmt, Args... args) {
-	std::ostringstream os;
-	ostream_print(os, fmt, args...);
-	return os.str();
-}
-
-}
-
-class ParseException {
-public:
-	std::string reason;
-
-	ParseException(const char *reason) : reason(reason) {}
-	ParseException(std::string &reason) : reason(reason) {}
-	ParseException(std::string &&reason) : reason(std::move(reason)) {}
-};
+class JsonElement;
 
 class Json {
-public:
-	enum JsonType {
-		JT_NONE,
-		JT_NULL,
-		JT_TRUE,
-		JT_FALSE,
-		JT_ARRAY,
-		JT_OBJECT,
-		JT_INT,
-		JT_FLOAT,
-		JT_STRING,
-		JT_ERROR,
-	};
-
-private:
-	JsonType type;
-
-	int integer;
-	double floating;
-	std::string string;
-	std::vector<Json> array;
-	std::map<std::string, Json> object;
-
-	static void EraseSpace(std::istream & is);
-	static void MatchPrimary(Json & to, std::istream & is);
-	static void MatchIdent(Json & to, std::istream & is);
-	static void MatchNumber(Json & to, std::istream & is);
-	static void MatchString(Json & to, std::istream & is);
-	static void MatchArray(Json & to, std::istream & is);
-	static void MatchDict(Json & to, std::istream & is);
-
-	void stringify(std::string & to);
-
+	std::shared_ptr<JsonElement> je;
 public:
 	using Array = std::vector<Json>;
 	using Object = std::map<std::string, Json>;
 
-	Json() = default;
+	static Json null;
 
-	Json(Array &&);
-	Json(Object &&);
+	enum Type {
+		NONE, NIL, BOOLEAN, NUMBER, STRING, ARRAY, OBJECT,
+	};
 
-	Json(const Json &) = default;
-	Json(Json &&) = default;
-	Json & operator = (const Json &) = default;
-	Json & operator = (Json &&) = default;
-
+	Json();
+	Json(nullptr_t);
+	Json(bool);
 	Json(int i);
+	Json(int64_t i);
 	Json(double f);
 	Json(const char *s);
-	Json(std::string &string);
-	Json(std::string &&string);
+	Json(const std::string &s);
+	Json(std::string &&s);
+	Json(const Array &obj);
+	Json(Array &&obj);
+	Json(const Object &obj);
+	Json(Object &&obj);
 
-	Json & operator [] (const int idx);
-	Json & operator [] (const std::string &key);
+	Json(std::initializer_list<Json> &&);
 
-	size_t size();
-	void append(const Json &json);
-	void append(Json && json);
-	void extend(const Json &json);
-	void extend(Json && json);
+	Json(const Json &) = default;
+	Json(Json &&);
+	Json &operator= (const Json &) = default;
+	Json &operator= (Json &&);
 
-	static Json parse(std::istream & is);
-	static Json parse(std::string s);
+	Json clone(); // deep copy
 
-	JsonType gettype();
-	int to_int();
-	double to_float();
-	std::string to_string();
+	static Json parse(const std::string &s);
+	static Json parse(const std::string &s, std::string &err);
 
-	friend std::ostream &operator << (std::ostream &, Json &);
-	friend std::ostream &operator << (std::ostream &, Json &&);
+	bool is_null() const;
+	bool is_boolean() const;
+	bool is_number() const;
+	bool is_integer() const;
+	bool is_float() const;
+	bool is_string() const;
+	bool is_array() const;
+	bool is_object() const;
+
+	bool to_boolean() const;
+	int64_t to_integer() const;
+	double to_float() const;
+	std::string to_string() const;
+
+	const std::string &as_string() const;
+	const Array &as_array() const;
+	const Object &as_object() const;
+
+	size_t size() const;
+
+	Json &operator[](const size_t idx);
+	Json &operator[](const std::string &s);
+
+	friend bool operator== (const Json &, const Json &);
+	friend bool operator!= (const Json &, const Json &);
+	friend Json operator+ (const Json &, const Json &);
+	friend Json operator- (const Json &, const Json &);
+	friend Json operator* (const Json &, const Json &);
+	friend Json operator/ (const Json &, const Json &);
+	friend Json operator% (const Json &, const Json &);
+
+	friend std::ostream &operator <<(std::ostream &, const Json &);
+
+	Json &operator+= (const Json &);
+	Json &operator-= (const Json &);
 };
 
 

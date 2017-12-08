@@ -2,17 +2,12 @@
 
 CC        = g++
 GDB       = gdb
-CFLAGS    = -c -O2 -std=c++14 -Wall -MMD -Isrc/
+CFLAGS    = -c -ggdb -O2 -std=c++14 -Wall -MMD -Isrc/
 BUILD_DIR = build
-SRCS      = $(shell find ./src -name "*.cc")
+SRCS      = ./src/json.cc ./src/test.cc ./example.cc
 OBJS      = $(patsubst ./%.cc,$(BUILD_DIR)/%.o,$(SRCS))
 BIN       = $(BUILD_DIR)/jsonor
 
-ifeq ($(test),true)
-SRCS += ./test/test.cc
-else
-SRCS += ./example.cc
-endif
 
 $(info "SRCS:$(SRCS)")
 
