@@ -85,6 +85,7 @@ public:
 class JNumber : public JsonElement {
 public:
 	Json::Type type() const override { return Json::NUMBER; }
+	virtual ~JNumber() = default;
 };
 
 class JInteger : public JNumber {
@@ -104,8 +105,6 @@ public:
 	std::string to_string() const override {
 		return std::to_string(i);
 	}
-
-	virtual ~JInteger() = default;
 };
 
 class JFloat : public JNumber {
