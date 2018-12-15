@@ -8,9 +8,6 @@ SRCS      = ./src/json.cc ./src/test.cc ./example.cc
 OBJS      = $(patsubst ./%.cc,$(BUILD_DIR)/%.o,$(SRCS))
 BIN       = $(BUILD_DIR)/jsonor
 
-
-$(info "SRCS:$(SRCS)")
-
 .PHONY: all test gdb run rebuild clean
 
 test:all
